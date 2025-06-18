@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المستثمر - منصة الوادي الجديد</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Cairo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .sidebar-link.active {
+            background-color: #16a34a; /* green-600 */
+            color: white;
+        }
+        .sidebar-link:not(.active) {
+            color: #334155; /* slate-700 */
+        }
+        .sidebar-link:not(.active):hover {
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+        .status-pending { background-color: #fef9c3; color: #ca8a04; } /* yellow */
+        .status-approved { background-color: #dcfce7; color: #16a34a; } /* green */
+        .status-rejected { background-color: #fee2e2; color: #dc2626; } /* red */
+        .status-paid { background-color: #dcfce7; color: #16a34a; }
+        .status-due { background-color: #fef3c7; color: #d97706; }
+        .page-content.active { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Edit mode styles */
+        .profile-form:not(.is-editing) input,
+        .profile-form:not(.is-editing) select {
+            background-color: #f1f5f9 !important;
+            border-color: #e5e7eb !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        #toast-notification, .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="fixed top-5 left-1/2 -translate-x-1/2 w-full max-w-md z-50 opacity-0 -translate-y-20">
+        <div id="toast-content" class="flex items-center gap-x-3 bg-green-600 text-white text-sm font-semibold p-4 rounded-lg shadow-lg">
+            <i data-lucide="check-circle" class="w-5 h-5"></i>
+            <span id="toast-message"></span>
+        </div>
+    </div>
+    
+    <!-- Modals Container -->
+    <div id="modal-container"></div>
+    <input type="file" id="file-uploader" class="hidden" />
+
+    <div class="flex h-screen bg-slate-50">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white shadow-lg flex-shrink-0 flex flex-col">
+            <div class="flex items-center h-20 border-b flex-shrink-0 px-4">
+                 <a href="land_investment_portal.html" class="flex items-center justify-between w-full">
+                    <div class="text-right flex-grow">
+                       <h1 class="font-extrabold text-sm text-green-800 leading-tight">المنصة الرقمية لصندوق الاستثمار واستصلاح الأراضي</h1>
+                    </div>
+                     <div class="flex items-center gap-x-2 flex-shrink-0">
+                        <img src="photo/logo gov.gif" alt="شعار 1" class="h-9 w-9 object-contain rounded-md" onerror="this.onerror=null;this.src='https://placehold.co/40x40/15803d/FFFFFF?text=L1';">
+                        <img src="photo/logo box.png" alt="شعار 2" class="h-9 w-9 object-contain rounded-md" onerror="this.onerror=null;this.src='https://placehold.co/40x40/3b82f6/FFFFFF?text=L2';">
+                    </div>
+                </a>
+            </div>
+            <nav class="mt-6 flex-grow p-4">
+                 <p class="text-xs font-semibold text-gray-400 uppercase px-4 mb-2">القائمة الرئيسية</p>
+                <a href="#dashboard" class="sidebar-link active flex items-center gap-x-3 py-2.5 px-4 rounded-lg transition-colors duration-200" data-page="dashboard"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="font-semibold">لوحة التحكم</span></a>
+                <p class="text-xs font-semibold text-gray-400 uppercase px-4 mt-6 mb-2">إدارة الفرص</p>
+                <a href="#applications" class="sidebar-link flex items-center gap-x-3 py-2.5 px-4 rounded-lg mt-1 transition-colors duration-200" data-page="applications"><i data-lucide="file-text" class="w-5 h-5"></i><span class="font-semibold">طلباتي</span></a>
+                <a href="#financials" class="sidebar-link flex items-center gap-x-3 py-2.5 px-4 rounded-lg mt-1 transition-colors duration-200" data-page="financials"><i data-lucide="landmark" class="w-5 h-5"></i><span class="font-semibold">المعاملات المالية</span></a>
+                <p class="text-xs font-semibold text-gray-400 uppercase px-4 mt-6 mb-2">إدارة الحساب</p>
+                <a href="#profile" class="sidebar-link flex items-center gap-x-3 py-2.5 px-4 rounded-lg mt-1 transition-colors duration-200" data-page="profile"><i data-lucide="user-cog" class="w-5 h-5"></i><span class="font-semibold">الملف الشخصي</span></a>
+                <a href="#documents" class="sidebar-link flex items-center gap-x-3 py-2.5 px-4 rounded-lg mt-1 transition-colors duration-200" data-page="documents"><i data-lucide="folder-archive" class="w-5 h-5"></i><span class="font-semibold">المستندات</span></a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+             <!-- Header -->
+            <header class="flex justify-between items-center p-5 bg-white border-b">
+                <div class="flex items-center gap-x-3">
+                    <img class="h-10 w-10 rounded-full object-cover" src="https://placehold.co/100x100/166534/ffffff?text=C" alt="صورة المستخدم" onerror="this.onerror=null;this.src='https://placehold.co/100x100/166534/ffffff?text=C';">
+                    <div>
+                        <h4 id="user-name-display" class="font-bold text-gray-800">شركة الوادي للتنمية</h4>
+                        <p id="user-type-display" class="text-xs text-gray-500">مستثمر شركة</p>
+                    </div>
+                </div>
+                 <div class="flex items-center gap-x-6">
+                    <a href="land_investment_portal.html" class="font-semibold text-gray-600 hover:text-green-600 transition-colors">عودة للبوابة</a>
+                    <div class="relative">
+                        <button id="notification-btn" class="relative text-gray-500 hover:text-gray-700">
+                            <i data-lucide="bell"></i>
+                            <span id="notification-badge" class="hidden absolute -top-1 -right-1 h-4 w-4 text-xs text-white flex items-center justify-center bg-red-500 rounded-full border-2 border-white"></span>
+                        </button>
+                        <div id="notification-dropdown" class="hidden absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-20">
+                           <div class="p-3 font-bold text-gray-700 border-b">الإشعارات</div>
+                           <ul id="notification-list" class="py-2 max-h-80 overflow-y-auto">
+                                <li class="text-center text-gray-500 text-sm p-4">لا توجد إشعارات جديدة.</li>
+                           </ul>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Body -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6" id="main-content">
+                <!-- Pages will be rendered here by JS -->
+            </main>
+        </div>
+    </div>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // --- TEMPLATES ---
+        const PageTemplates = {
+            dashboard: `
+                <div class="page-content active">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-5 rounded-lg shadow-sm flex items-center gap-x-4"><div class="bg-green-100 p-3 rounded-full"><i data-lucide="landmark" class="w-6 h-6 text-green-600"></i></div><div><p class="text-sm text-gray-500">إجمالي الاستثمارات</p><p class="text-xl font-bold text-gray-800">12,500,000 ج.م</p></div></div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm flex items-center gap-x-4"><div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="hourglass" class="w-6 h-6 text-yellow-600"></i></div><div><p class="text-sm text-gray-500">طلبات قيد المراجعة</p><p class="text-xl font-bold text-gray-800">3</p></div></div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm flex items-center gap-x-4"><div class="bg-blue-100 p-3 rounded-full"><i data-lucide="check-circle-2" class="w-6 h-6 text-blue-600"></i></div><div><p class="text-sm text-gray-500">فرص مكتملة</p><p class="text-xl font-bold text-gray-800">1</p></div></div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm flex items-center gap-x-4"><div class="bg-red-100 p-3 rounded-full"><i data-lucide="calendar-clock" class="w-6 h-6 text-red-600"></i></div><div><p class="text-sm text-gray-500">الدفعة القادمة</p><p class="text-xl font-bold text-gray-800">250,000 ج.م</p></div></div>
+                    </div>
+                    <div class="mt-8 bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">أحدث الطلبات</h3>
+                        <div class="overflow-x-auto">
+                           <table class="w-full text-sm text-right"> <thead class="text-gray-500 bg-gray-50"> <tr> <th class="p-3">#</th><th class="p-3">اسم الفرصة</th><th class="p-3">النوع</th><th class="p-3">تاريخ التقديم</th><th class="p-3 text-center">الحالة</th><th class="p-3"></th> </tr></thead> <tbody> <tr class="border-b"><td class="p-3 font-semibold">#1024</td><td class="p-3 font-semibold">مزاد أراضي استصلاح</td><td class="p-3">مزاد</td><td class="p-3">10 يونيو 2025</td><td class="p-3 text-center"><span class="status-badge status-approved">مقبول</span></td><td class="p-3"><button class="details-btn text-green-600 hover:underline font-bold">التفاصيل</button></td></tr> <tr class="border-b"><td class="p-3 font-semibold">#852</td><td class="p-3 font-semibold">قطعة أرض بمنطقة باريس</td><td class="p-3">طرح مباشر</td><td class="p-3">5 يونيو 2025</td><td class="p-3 text-center"><span class="status-badge status-pending">قيد المراجعة</span></td><td class="p-3"><button class="details-btn text-green-600 hover:underline font-bold">التفاصيل</button></td></tr> </tbody> </table>
+                        </div>
+                    </div>
+                </div>`,
+            applications: `
+                <div class="page-content">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold text-gray-800">قائمة طلباتي</h3><div class="flex items-center gap-x-2"><select class="p-2 border border-gray-300 rounded-lg text-sm"><option>كل الأنواع</option><option>مزاد</option><option>طرح مباشر</option><option>مبادرة</option></select><select class="p-2 border border-gray-300 rounded-lg text-sm"><option>كل الحالات</option><option>مقبول</option><option>قيد المراجعة</option><option>مرفوض</option></select></div></div>
+                        <div class="overflow-x-auto"><table class="w-full text-sm text-right"><thead class="text-gray-500 bg-gray-50"><tr><th class="p-3">#</th><th class="p-3">اسم الفرصة</th><th class="p-3">النوع</th><th class="p-3">تاريخ التقديم</th><th class="p-3 text-center">الحالة</th><th class="p-3"></th></tr></thead><tbody><tr class="border-b"><td class="p-3 font-semibold">#1024</td><td class="p-3 font-semibold">مزاد أراضي استصلاح</td><td class="p-3">مزاد</td><td class="p-3">10 يونيو 2025</td><td class="p-3 text-center"><span class="status-badge status-approved">مقبول</span></td><td class="p-3"><button class="details-btn text-green-600 hover:underline font-bold">التفاصيل</button></td></tr><tr class="border-b"><td class="p-3 font-semibold">#852</td><td class="p-3 font-semibold">قطعة أرض بمنطقة باريس</td><td class="p-3">طرح مباشر</td><td class="p-3">5 يونيو 2025</td><td class="p-3 text-center"><span class="status-badge status-pending">قيد المراجعة</span></td><td class="p-3"><button class="details-btn text-green-600 hover:underline font-bold">التفاصيل</button></td></tr></tbody></table></div>
+                    </div>
+                </div>`,
+            financials: `
+                <div class="page-content">
+                    <div class="space-y-8">
+                        <div class="bg-white p-6 rounded-lg shadow-sm">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">الاستحقاقات المالية</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-right">
+                                    <thead class="text-gray-500 bg-gray-50">
+                                        <tr>
+                                            <th class="p-3">البيان</th>
+                                            <th class="p-3">تاريخ الاستحقاق</th>
+                                            <th class="p-3">تاريخ السداد</th>
+                                            <th class="p-3">قيمة الغرامة</th>
+                                            <th class="p-3">المبلغ الإجمالي</th>
+                                            <th class="p-3">حالة الدفع</th>
+                                            <th class="p-3">الإجراء</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b">
+                                            <td class="p-3 font-semibold">قسط أرض #1024</td>
+                                            <td class="p-3">25 يونيو 2025</td>
+                                            <td class="p-3">-</td>
+                                            <td class="p-3 font-semibold text-red-600">5,000 ج.م</td>
+                                            <td class="p-3 font-bold">255,000 ج.م</td>
+                                            <td class="p-3"><span class="status-badge status-due">مستحق</span></td>
+                                            <td class="p-3"><button class="pay-now-btn bg-red-600 text-white px-3 py-1 rounded-md text-xs font-bold hover:bg-red-700">ادفع الآن</button></td>
+                                        </tr>
+                                        <tr class="border-b">
+                                            <td class="p-3 font-semibold">دفعة مقدمة - مزاد #1024</td>
+                                            <td class="p-3">15 مارس 2025</td>
+                                            <td class="p-3">15 مارس 2025</td>
+                                            <td class="p-3">-</td>
+                                            <td class="p-3 font-bold">500,000 ج.م</td>
+                                            <td class="p-3"><span class="status-badge status-paid">مدفوع</span></td>
+                                            <td class="p-3"><span class="text-xs text-gray-500">إيداع بنكي</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>`,
+            profile: `
+                <div class="page-content">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-6 border-b pb-4">
+                            <div><h3 class="text-xl font-bold text-gray-800">ملف الشركة</h3><p class="text-sm text-gray-500">إدارة معلومات الشركة وبياناتها الرسمية.</p></div>
+                            <button id="edit-profile-btn" class="bg-green-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-green-700 flex items-center gap-x-2"><i data-lucide="edit-3" class="w-4 h-4"></i><span id="edit-btn-text">تعديل البيانات</span></button>
+                        </div>
+                        <form id="company-profile-form" class="profile-form space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div><label class="font-semibold text-sm text-gray-700">رقم الملف</label><input type="text" value="COM-00219" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                <div><label class="font-semibold text-sm text-gray-700">اسم الشركة</label><input type="text" value="شركة الوادي للتنمية" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                <div><label class="font-semibold text-sm text-gray-700">الكيان/الصفة القانونية</label><input type="text" value="شركة مساهمة مصرية" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                <div><label class="font-semibold text-sm text-gray-700">نشاط الشركة</label><input type="text" value="استصلاح زراعي" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                <div><label class="font-semibold text-sm text-gray-700">الجنسية</label><input type="text" value="مصرية" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                <div><label class="font-semibold text-sm text-gray-700">الغرض من الاستثمار</label><input type="text" value="زراعة محاصيل استراتيجية" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                <div><label class="font-semibold text-sm text-gray-700">عدد الشركاء</label><input type="number" value="3" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                <div><label class="font-semibold text-sm text-gray-700">هاتف الشركة</label><input type="text" value="0221234567" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                <div><label class="font-semibold text-sm text-gray-700">البريد الإلكتروني للشركة</label><input type="email" value="info@wadi-dev.com" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                            </div>
+                            <div class="border-t pt-6">
+                                <h4 class="font-bold text-gray-800 mb-4">بيانات الممثل القانوني</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div><label class="font-semibold text-sm text-gray-700">اسم الممثل القانوني</label><input type="text" value="أحمد عبد العزيز" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                    <div><label class="font-semibold text-sm text-gray-700">الرقم القومي</label><input type="text" value="28011122100456" class="w-full mt-1 p-2 border rounded-lg" readonly></div>
+                                </div>
+                            </div>
+                            <div class="pt-2 flex justify-end">
+                                <button type="submit" class="bg-green-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-green-700 transition hidden">حفظ</button>
+                            </div>
+                         </form>
+                    </div>
+                </div>`,
+            documents: `
+                <div class="page-content">
+                     <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">مستندات الشركة</h3>
+                            <button id="upload-doc-btn" class="bg-green-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-green-700 flex items-center gap-x-2"><i data-lucide="upload-cloud"></i> رفع مستند جديد</button>
+                        </div>
+                        <div id="company-docs">
+                            <table class="w-full text-sm text-right"> <thead class="text-gray-500 bg-gray-50"><tr><th class="p-3">اسم المستند</th><th class="p-3">تاريخ الرفع</th><th class="p-3 text-center">الحالة</th><th class="p-3 text-center">الإجراءات</th></tr></thead> <tbody id="documents-table-body"> <tr class="border-b" data-doc-name="عقد التأسيس"><td class="p-3 font-semibold">مرفق عقد التأسيس</td><td class="p-3">5 مارس 2025</td><td class="p-3 text-center"><span class="status-badge status-approved">تم التحقق</span></td><td class="p-3 text-center"><button class="view-doc-btn text-gray-400 hover:text-green-600 p-1"><i data-lucide="eye"></i></button><button class="delete-doc-btn text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2"></i></button></td></tr> <tr class="border-b" data-doc-name="السجل التجاري"><td class="p-3 font-semibold">مرفق السجل التجاري</td><td class="p-3">5 مارس 2025</td><td class="p-3 text-center"><span class="status-badge status-approved">تم التحقق</span></td><td class="p-3 text-center"><button class="view-doc-btn text-gray-400 hover:text-green-600 p-1"><i data-lucide="eye"></i></button><button class="delete-doc-btn text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2"></i></button></td></tr> <tr class="border-b" data-doc-name="البطاقة الضريبية"><td class="p-3 font-semibold">مرفق البطاقة الضريبية</td><td class="p-3">-</td><td class="p-3 text-center"><span class="status-badge status-rejected">مطلوب</span></td><td class="p-3 text-center"><button class="upload-now-btn text-green-600 hover:underline font-bold">رفع الآن</button></td></tr> </tbody> </table>
+                        </div>
+                    </div>
+                </div>`,
+        };
+
+        // --- GLOBAL STATE & DOM ELEMENTS ---
+        const AppData = { notifications: [] };
+        const DOM = {
+            mainContent: document.getElementById('main-content'),
+            sidebarLinks: document.querySelectorAll('.sidebar-link'),
+            modalContainer: document.getElementById('modal-container'),
+            fileUploader: document.getElementById('file-uploader'),
+            notificationBtn: document.getElementById('notification-btn'),
+            notificationDropdown: document.getElementById('notification-dropdown'),
+            notificationBadge: document.getElementById('notification-badge'),
+            notificationList: document.getElementById('notification-list'),
+            toast: document.getElementById('toast-notification'),
+            toastMessage: document.getElementById('toast-message'),
+        };
+
+        let currentUploadTarget = null;
+
+        // --- FUNCTIONS ---
+        function showToast(message) {
+            DOM.toastMessage.textContent = message;
+            DOM.toast.classList.remove('opacity-0', '-translate-y-20');
+            setTimeout(() => DOM.toast.classList.add('opacity-0', '-translate-y-20'), 4000);
+        }
+
+        function renderNotifications() {
+            const unreadCount = AppData.notifications.filter(n => !n.read).length;
+            DOM.notificationBadge.textContent = unreadCount;
+            DOM.notificationBadge.classList.toggle('hidden', unreadCount === 0);
+
+            if (AppData.notifications.length === 0) {
+                DOM.notificationList.innerHTML = `<li class="text-center text-gray-500 text-sm p-4">لا توجد إشعارات جديدة.</li>`;
+                return;
+            }
+
+            const iconMap = { success: 'check-circle-2', alert: 'alert-triangle', info: 'info' };
+            const colorMap = { success: 'text-green-500', alert: 'text-yellow-500', info: 'text-blue-500' };
+
+            DOM.notificationList.innerHTML = AppData.notifications.map(n => `
+                <li class="p-3 border-b border-gray-100 hover:bg-slate-50 cursor-pointer flex items-start gap-x-3">
+                    <i data-lucide="${iconMap[n.type] || 'info'}" class="w-5 h-5 mt-1 ${colorMap[n.type] || 'text-gray-500'}"></i>
+                    <div>
+                        <p class="font-semibold text-gray-800 text-sm">${n.message}</p>
+                        <p class="text-xs text-gray-400">${n.time.toLocaleTimeString('ar-EG')}</p>
+                    </div>
+                </li>`).join('');
+            lucide.createIcons();
+        }
+
+        function addNotification(message, type = 'info') {
+            AppData.notifications.unshift({ message, type, read: false, time: new Date() });
+            renderNotifications();
+        }
+        
+        function openModal(content) {
+            DOM.modalContainer.innerHTML = content;
+            lucide.createIcons();
+            setTimeout(() => {
+                const modal = DOM.modalContainer.querySelector('.modal');
+                const modalContent = DOM.modalContainer.querySelector('.modal-content');
+                if (modal) modal.classList.remove('opacity-0');
+                if (modalContent) modalContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = DOM.modalContainer.querySelector('.modal');
+            const modalContent = DOM.modalContainer.querySelector('.modal-content');
+            if (modal) modal.classList.add('opacity-0');
+            if (modalContent) modalContent.classList.add('scale-95');
+            setTimeout(() => { DOM.modalContainer.innerHTML = ''; }, 300);
+        }
+        
+        function renderPage(pageId) {
+            if (!pageId || !PageTemplates[pageId]) pageId = 'dashboard';
+            DOM.mainContent.innerHTML = PageTemplates[pageId];
+            lucide.createIcons();
+            bindPageEventListeners(pageId);
+        }
+
+        function handleNavigation(e) {
+            e.preventDefault();
+            const pageId = e.currentTarget.dataset.page;
+            DOM.sidebarLinks.forEach(l => l.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            renderPage(pageId);
+        }
+        
+        function bindPageEventListeners(pageId) {
+            if (pageId === 'profile') {
+                const form = document.getElementById('company-profile-form');
+                const editBtn = document.getElementById('edit-profile-btn');
+                if (editBtn && form) {
+                    editBtn.addEventListener('click', () => {
+                        const isEditing = form.classList.contains('is-editing');
+                        if(isEditing){
+                            handleProfileUpdate({preventDefault: () => {}}, form);
+                        } else {
+                            toggleEditMode(form);
+                        }
+                    });
+                    form.addEventListener('submit', (e) => handleProfileUpdate(e, form));
+                }
+            }
+        }
+
+        function toggleEditMode(formElement) {
+            const isEditing = formElement.classList.toggle('is-editing');
+            const editBtn = document.getElementById('edit-profile-btn');
+            const editBtnText = document.getElementById('edit-btn-text');
+            const submitButton = formElement.querySelector('button[type="submit"]');
+            
+            editBtnText.textContent = isEditing ? "إرسال للمراجعة" : "تعديل البيانات";
+            editBtn.classList.toggle('bg-blue-600', isEditing);
+            editBtn.classList.toggle('hover:bg-blue-700', isEditing);
+            editBtn.classList.toggle('bg-green-600', !isEditing);
+            editBtn.classList.toggle('hover:bg-green-700', !isEditing);
+            
+            if (submitButton) submitButton.classList.toggle('hidden', !isEditing);
+        }
+        
+        function handleProfileUpdate(e, form) {
+            e.preventDefault();
+            toggleEditMode(form);
+            showToast('تم إرسال التحديث، وجارٍ مراجعته.');
+            setTimeout(() => addNotification('تمت الموافقة على تحديث بياناتك.', 'success'), 5000);
+        }
+        
+        function handleFileUpload(e) {
+            if (e.target.files.length === 0) return;
+            const file = e.target.files[0];
+            const tableBody = document.getElementById('documents-table-body');
+            
+            let targetRow = currentUploadTarget;
+            if (targetRow) {
+                targetRow.cells[1].textContent = new Date().toLocaleDateString('ar-EG');
+                targetRow.cells[2].innerHTML = `<span class="status-badge status-pending">قيد المراجعة</span>`;
+                targetRow.cells[3].innerHTML = `<button class="view-doc-btn text-gray-400 hover:text-green-600 p-1"><i data-lucide="eye"></i></button><button class="delete-doc-btn text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2"></i></button>`;
+                currentUploadTarget = null;
+            } else if (tableBody) {
+                const newRow = `<tr class="border-b" data-doc-name="${file.name}"><td class="p-3 font-semibold">${file.name}</td><td class="p-3">${new Date().toLocaleDateString('ar-EG')}</td><td class="p-3 text-center"><span class="status-badge status-pending">قيد المراجعة</span></td><td class="p-3 text-center"><button class="view-doc-btn text-gray-400 hover:text-green-600 p-1"><i data-lucide="eye"></i></button><button class="delete-doc-btn text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2"></i></button></td></tr>`;
+                tableBody.insertAdjacentHTML('afterbegin', newRow);
+            }
+            lucide.createIcons();
+            showToast(`تم رفع المستند "${file.name}" بنجاح.`);
+        }
+
+        document.addEventListener('click', e => {
+            if (DOM.notificationBtn && !DOM.notificationBtn.contains(e.target) && DOM.notificationDropdown && !DOM.notificationDropdown.contains(e.target)) {
+                 DOM.notificationDropdown.classList.add('hidden');
+            }
+        });
+        
+        DOM.sidebarLinks.forEach(link => link.addEventListener('click', handleNavigation));
+        if (DOM.notificationBtn) {
+            DOM.notificationBtn.addEventListener('click', e => { e.stopPropagation(); DOM.notificationDropdown.classList.toggle('hidden'); });
+        }
+
+        DOM.mainContent.addEventListener('click', e => {
+            if (e.target.closest('.pay-now-btn')) showPaymentModal();
+            if (e.target.closest('.details-btn')) showDetailsModal();
+            if (e.target.closest('#upload-doc-btn')) { currentUploadTarget = null; DOM.fileUploader.click(); }
+            if (e.target.closest('.view-doc-btn')) showDocumentPreview(e.target.closest('tr'));
+            if (e.target.closest('.delete-doc-btn')) showDeleteConfirmation(e.target.closest('tr'));
+            if (e.target.closest('.upload-now-btn')) {
+                currentUploadTarget = e.target.closest('tr');
+                DOM.fileUploader.click();
+            }
+        });
+
+        DOM.modalContainer.addEventListener('click', e => {
+            if(e.target.matches('.modal')) closeModal();
+            if(e.target.closest('.payment-method-btn')) handlePaymentMethodSelection(e);
+            if(e.target.closest('.back-to-payment-method')) showPaymentStep(1);
+        });
+
+        if (DOM.fileUploader) {
+            DOM.fileUploader.addEventListener('change', handleFileUpload);
+        }
+        
+        function showDocumentPreview(row) {
+            const docName = row.dataset.docName || 'مستند';
+            const content = `<div class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 opacity-0" onclick="closeModal()"><div class="modal-content bg-white rounded-lg shadow-2xl w-full max-w-2xl transform scale-95" onclick="event.stopPropagation()"><div class="p-5 border-b flex justify-between items-center"><h3 class="text-xl font-bold text-gray-800">عرض: ${docName}</h3><button onclick="closeModal()"><i data-lucide="x"></i></button></div><div class="p-6 text-center"><p class="text-gray-600">هنا يتم عرض محتوى المستند...</p><i data-lucide="file-text" class="w-32 h-32 mx-auto text-gray-200 mt-4"></i></div></div></div>`;
+            openModal(content);
+        }
+
+        function showDeleteConfirmation(row) {
+            const docName = row.dataset.docName || 'هذا المستند';
+            const content = `<div class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 opacity-0" onclick="closeModal()"><div class="modal-content bg-white rounded-lg shadow-2xl w-full max-w-sm transform scale-95" onclick="event.stopPropagation()"><div class="p-6 text-center"><i data-lucide="alert-triangle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i><h3 class="text-lg font-bold text-gray-800">تأكيد الحذف</h3><p class="text-sm text-gray-500 mt-2">هل أنت متأكد أنك تريد حذف "${docName}"؟ لا يمكن التراجع عن هذا الإجراء.</p><div class="mt-6 flex justify-center gap-x-4"><button class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-300" onclick="closeModal()">إلغاء</button><button id="confirm-delete-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700">تأكيد الحذف</button></div></div></div></div>`;
+            openModal(content);
+            document.getElementById('confirm-delete-btn').onclick = () => {
+                row.remove();
+                closeModal();
+                showToast(`تم حذف "${docName}" بنجاح.`);
+            };
+        }
+
+        function showPaymentModal() {
+            const content = `<div class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 opacity-0" onclick="closeModal()"><div class="modal-content bg-white rounded-lg shadow-2xl w-full max-w-md transform scale-95" onclick="event.stopPropagation()"><div id="payment-step-1"><div class="p-5 border-b"><h3 class="text-xl font-bold text-gray-800">إتمام عملية الدفع</h3></div><div class="p-6 space-y-4"><p class="font-semibold">اختر طريقة الدفع:</p><button data-payment-method="card" class="payment-method-btn w-full flex items-center gap-x-4 p-4 border rounded-lg hover:bg-gray-50"><i data-lucide="credit-card" class="w-6 h-6 text-green-600"></i><span class="font-bold">البطاقة الإئتمانية</span></button><button data-payment-method="bank" class="payment-method-btn w-full flex items-center gap-x-4 p-4 border rounded-lg hover:bg-gray-50"><i data-lucide="landmark" class="w-6 h-6 text-green-600"></i><span class="font-bold">إيداع بنكي</span></button></div></div><div id="payment-step-2" class="hidden"></div></div></div>`;
+            openModal(content);
+        }
+        function handlePaymentMethodSelection(e) {
+            const method = e.currentTarget.dataset.paymentMethod;
+            let content = '';
+            if (method === 'card') {
+                content = `<div class="p-5 border-b"><h3 class="text-xl font-bold text-gray-800">بيانات البطاقة</h3></div><div class="p-6 space-y-4"><div><label class="text-sm font-semibold">رقم البطاقة</label><input class="w-full mt-1 p-2 border rounded-lg" placeholder="xxxx xxxx xxxx xxxx"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-sm font-semibold">تاريخ الانتهاء</label><input class="w-full mt-1 p-2 border rounded-lg" placeholder="شهر/سنة"></div><div><label class="text-sm font-semibold">CVV</label><input class="w-full mt-1 p-2 border rounded-lg" placeholder="123"></div></div><div class="pt-4 flex items-center justify-between"><button class="back-to-payment-method text-sm font-semibold hover:text-green-600">العودة</button><button class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700" onclick="closeModal(); showToast('تمت عملية الدفع بنجاح.')">تأكيد الدفع</button></div></div>`;
+            } else {
+                content = `<div class="p-5 border-b"><h3 class="text-xl font-bold text-gray-800">تفاصيل الإيداع البنكي</h3></div><div class="p-6 space-y-3"><p class="text-sm">يرجى إيداع المبلغ المستحق في حسابنا البنكي.</p><div class="bg-gray-50 p-3 rounded-lg"><p class="font-mono text-sm"><strong>اسم البنك:</strong> بنك مصر</p><p class="font-mono text-sm"><strong>رقم الحساب:</strong> 1234567890123456</p></div><div class="pt-4 flex items-center justify-between"><button class="back-to-payment-method text-sm font-semibold hover:text-green-600">العودة</button><button class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700" onclick="closeModal(); showToast('تم استلام طلب تأكيد الإيداع.')">تأكيد الإيداع</button></div></div>`;
+            }
+            document.getElementById('payment-step-2').innerHTML = content;
+            lucide.createIcons();
+            showPaymentStep(2);
+        }
+        function showPaymentStep(step) {
+            document.getElementById('payment-step-1').classList.toggle('hidden', step === 2);
+            document.getElementById('payment-step-2').classList.toggle('hidden', step === 1);
+        }
+        function showDetailsModal() {
+            const content = `<div class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 opacity-0" onclick="closeModal()"><div class="modal-content bg-white rounded-lg shadow-2xl w-full max-w-2xl transform scale-95" onclick="event.stopPropagation()"><div class="p-5 border-b flex justify-between items-center"><h3 class="text-xl font-bold text-gray-800">تفاصيل طلب #1024</h3><button onclick="closeModal()"><i data-lucide="x"></i></button></div><div class="p-6 max-h-[70vh] overflow-y-auto"><div class="grid grid-cols-2 gap-6 text-sm"><div class="col-span-2 font-bold text-lg text-green-700 border-b pb-2">البيانات الرئيسية</div><div class="flex items-start gap-3"><i data-lucide="map-pin" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">المحافظة</p><p class="font-bold text-gray-800">الوادي الجديد</p></div></div><div class="flex items-start gap-3"><i data-lucide="compass" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">الموقع</p><p class="font-bold text-gray-800">منطقة الخارجة</p></div></div><div class="flex items-start gap-3"><i data-lucide="map" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">المنطقة</p><p class="font-bold text-gray-800">تقسيم الشباب</p></div></div><div class="flex items-start gap-3"><i data-lucide="maximize" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">المساحة</p><p class="font-bold text-gray-800">50 فدان</p></div></div><div class="flex items-start gap-3"><i data-lucide="star" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">نوع الفرصة</p><p class="font-bold text-gray-800">مزاد</p></div></div><div class="flex items-start gap-3"><i data-lucide="banknote" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">جهة الولاية</p><p class="font-bold text-gray-800">صندوق استصلاح الأراضي</p></div></div><div class="col-span-2 font-bold text-lg text-green-700 border-b pb-2 mt-4">بيانات إضافية</div><div class="flex items-start gap-3"><i data-lucide="building" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">القطاع الرئيسي</p><p class="font-bold text-gray-800">زراعي</p></div></div><div class="flex items-start gap-3"><i data-lucide="leaf" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">القطاع</p><p class="font-bold text-gray-800">استصلاح زراعي</p></div></div><div class="flex items-start gap-3"><i data-lucide="plug-zap" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">الخدمات</p><p class="font-bold text-gray-800">مرفقة (بئر مياه)</p></div></div><div class="flex items-start gap-3"><i data-lucide="file-signature" class="w-5 h-5 text-green-600 mt-1"></i><div><p class="text-gray-500 font-semibold">نوع العقد</p><p class="font-bold text-gray-800">تمليك</p></div></div></div></div></div></div>`;
+            openModal(content);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPage('dashboard');
+            renderNotifications();
+            addNotification('لديك دفعة مستحقة قريبًا.', 'alert');
+        });
+
+    </script>
+</body>
+</html>
